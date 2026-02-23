@@ -1,0 +1,4 @@
+# 项目依赖包
+selenium==4.21.0
+webdriver-manager==4.0.1
+playwright==1.45.0
