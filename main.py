@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-淘宝自动抢购脚本
-功能：定时抢购淘宝限量发售商品
+Taobao Flash Sale Script
+Function: Timed purchase of limited edition products on Taobao
 """
+
+import sys
+import io
+
+# Set standard output to UTF-8 encoding to solve terminal garbled problem
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 import time
 import logging
@@ -11,7 +18,7 @@ from datetime import datetime
 from configparser import ConfigParser
 from playwright.sync_api import sync_playwright
 
-# 配置日志
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -22,13 +29,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# 读取配置
+# Read configuration
 config = ConfigParser()
 config.read('config.ini', encoding='utf-8')
 
 class TaobaoFlashSale:
     def __init__(self):
-        """初始化抢购类"""
+        """Initialize flash sale class"""
         self.username = config.get('account', 'username', fallback='')
         self.password = config.get('account', 'password', fallback='')
         self.product_url = config.get('product', 'url', fallback='')
@@ -38,25 +45,26 @@ class TaobaoFlashSale:
         self.browser = None
         self.page = None
         
-        logger.info('淘宝自动抢购脚本初始化完成')
-        logger.info(f'商品链接: {self.product_url}')
-        logger.info(f'抢购时间: {self.flash_sale_time}')
+        logger.info('Taobao Flash Sale Script initialized')
+        logger.info(f'Product URL: {self.product_url}')
+        logger.info(f'Flash Sale Time: {self.flash_sale_time}')
     
     def init_browser(self):
-        """初始化浏览器"""
-        logger.info(f'初始化 {self.browser_type} 浏览器...')
+        """Initialize browser"""
+        logger.info(f'Initializing {self.browser_type} browser...')
         playwright = sync_playwright().start()
         
         if self.browser_type == 'chrome':
             self.browser = playwright.chromium.launch(
                 headless=self.headless,
-                slow_mo=0,  # 无延迟，提高速度
+                slow_mo=0,  # No delay, improve speed
                 args=[
                     '--disable-extensions',
                     '--disable-gpu',
                     '--no-sandbox',
                     '--disable-dev-shm-usage'
-                ]
+                ],
+                executable_path="C:\\Users\\Jared\\AppData\\Local\\ms-playwright\\chromium-1208\\chrome-win64\\chrome.exe"
             )
         elif self.browser_type == 'firefox':
             self.browser = playwright.firefox.launch(
@@ -76,116 +84,116 @@ class TaobaoFlashSale:
                 ]
             )
         else:
-            raise ValueError(f'不支持的浏览器类型: {self.browser_type}')
+            raise ValueError(f'Unsupported browser type: {self.browser_type}')
         
         self.page = self.browser.new_page()
-        # 设置页面超时
+        # Set page timeout
         self.page.set_default_timeout(30000)
-        logger.info('浏览器初始化成功')
+        logger.info('Browser initialized successfully')
     
     def login(self):
-        """登录淘宝账号"""
-        logger.info('开始登录淘宝账号...')
+        """Login to Taobao account"""
+        logger.info('Starting Taobao login...')
         
-        # 打开淘宝登录页
+        # Open Taobao login page
         self.page.goto('https://login.taobao.com')
         time.sleep(2)
         
-        # 检查是否已登录
+        # Check if already logged in
         if 'login' in self.page.url:
-            logger.info('需要登录账号')
+            logger.info('Login required')
             
-            # 如果配置了账号密码，尝试自动登录
+            # If username and password are configured, try auto-login
             if self.username and self.password:
-                logger.info('使用配置的账号密码自动登录...')
+                logger.info('Attempting auto-login with configured credentials...')
                 try:
-                    # 点击账号密码登录
+                    # Click password login
                     self.page.click('text=密码登录')
                     time.sleep(1)
                     
-                    # 输入账号密码
+                    # Enter username and password
                     self.page.fill('#fm-login-id', self.username)
                     self.page.fill('#fm-login-password', self.password)
                     time.sleep(0.5)
                     
-                    # 点击登录按钮
+                    # Click login button
                     self.page.click('#login-form > div.fm-btn > button')
                     time.sleep(5)
                     
-                    # 检查是否登录成功
+                    # Check if login successful
                     if 'login' not in self.page.url:
-                        logger.info('登录成功！')
+                        logger.info('Login successful!')
                     else:
-                        logger.warning('自动登录失败，可能需要验证码，请手动登录...')
-                        logger.info('请在浏览器中完成登录，完成后按回车键继续...')
+                        logger.warning('Auto-login failed, verification code may be required, please login manually...')
+                        logger.info('Please complete login in the browser, then press Enter to continue...')
                         input()
                 except Exception as e:
-                    logger.error(f'自动登录出错: {e}')
-                    logger.info('请在浏览器中完成登录，完成后按回车键继续...')
+                    logger.error(f'Auto-login error: {e}')
+                    logger.info('Please complete login in the browser, then press Enter to continue...')
                     input()
             else:
-                logger.info('未配置账号密码，请手动登录...')
-                logger.info('请在浏览器中完成登录，完成后按回车键继续...')
+                logger.info('Username and password not configured, please login manually...')
+                logger.info('Please complete login in the browser, then press Enter to continue...')
                 input()
         else:
-            logger.info('已经登录，跳过登录步骤')
+            logger.info('Already logged in, skipping login step')
     
     def navigate_to_product(self):
-        """导航到商品页面"""
-        logger.info(f'导航到商品页面: {self.product_url}')
+        """Navigate to product page"""
+        logger.info(f'Navigating to product page: {self.product_url}')
         
-        # 打开商品页面
+        # Open product page
         self.page.goto(self.product_url)
         time.sleep(2)
         
-        # 检查是否成功进入商品页面
+        # Check if successfully entered product page
         if 'detail' in self.page.url:
-            logger.info('成功进入商品页面')
+            logger.info('Successfully entered product page')
         else:
-            logger.warning('可能未成功进入商品页面，请检查链接是否正确')
+            logger.warning('May not have entered product page successfully, please check if the link is correct')
     
     def check_flash_sale_time(self):
-        """检查抢购时间是否到达"""
-        logger.info('开始监控抢购时间...')
+        """Check if flash sale time has arrived"""
+        logger.info('Starting flash sale time monitoring...')
         
-        # 解析抢购时间
+        # Parse flash sale time
         sale_time = datetime.strptime(self.flash_sale_time, '%Y-%m-%d %H:%M:%S')
-        logger.info(f'抢购时间设置为: {sale_time}')
+        logger.info(f'Flash sale time set to: {sale_time}')
         
         while True:
             current_time = datetime.now()
             time_diff = (sale_time - current_time).total_seconds()
             
             if time_diff <= 0:
-                logger.info('抢购时间已到达！开始执行抢购...')
+                logger.info('Flash sale time arrived! Starting purchase...')
                 break
             elif time_diff < 60:
-                logger.info(f'距离抢购时间还有 {time_diff:.2f} 秒')
-                time.sleep(0.1)  # 精确到0.1秒
+                logger.info(f'Time until flash sale: {time_diff:.2f} seconds')
+                time.sleep(0.1)  # Accurate to 0.1 seconds
             elif time_diff < 300:
-                logger.info(f'距离抢购时间还有 {time_diff:.0f} 秒')
+                logger.info(f'Time until flash sale: {time_diff:.0f} seconds')
                 time.sleep(1)
             else:
-                logger.info(f'距离抢购时间还有 {time_diff:.0f} 秒')
+                logger.info(f'Time until flash sale: {time_diff:.0f} seconds')
                 time.sleep(60)
     
     def 抢购(self):
-        """执行抢购操作"""
-        logger.info('开始执行抢购操作...')
+        """Execute purchase operation"""
+        logger.info('Starting purchase operation...')
         
         try:
-            # 循环尝试抢购，提高成功率
+            # Loop to try purchasing multiple times, improve success rate
             for i in range(10):
-                logger.info(f'尝试抢购第 {i+1} 次...')
+                logger.info(f'Purchase attempt {i+1}...')
                 
-                # 刷新页面，确保页面状态最新
+                # Refresh page to ensure latest page state
                 if i > 0:
                     self.page.reload()
                     time.sleep(0.5)
                 
-                # 尝试点击立即购买按钮
+                # Try to click buy now button
                 try:
-                    # 淘宝/天猫的购买按钮选择器可能不同，这里尝试多种可能
+                    # Taobao/Tmall buy button selectors may vary, try multiple possibilities
                     buy_buttons = [
                         'text=立即购买',
                         'text=马上抢',
@@ -200,20 +208,20 @@ class TaobaoFlashSale:
                             if self.page.is_visible(selector, timeout=1000):
                                 self.page.click(selector, timeout=1000)
                                 clicked = True
-                                logger.info(f'成功点击购买按钮: {selector}')
+                                logger.info(f'Successfully clicked buy button: {selector}')
                                 break
                         except Exception:
                             continue
                     
                     if not clicked:
-                        logger.warning('未找到购买按钮，可能商品还未到抢购时间')
+                        logger.warning('Buy button not found, product may not be available for purchase yet')
                         time.sleep(0.1)
                         continue
                     
-                    # 等待订单页面加载
+                    # Wait for order page to load
                     time.sleep(1)
                     
-                    # 尝试提交订单
+                    # Try to submit order
                     submit_buttons = [
                         'text=提交订单',
                         '#submitOrderPC_1 > div > a',
@@ -224,58 +232,58 @@ class TaobaoFlashSale:
                         try:
                             if self.page.is_visible(selector, timeout=2000):
                                 self.page.click(selector, timeout=1000)
-                                logger.info(f'成功点击提交订单按钮: {selector}')
-                                logger.info('抢购成功！请尽快完成支付')
+                                logger.info(f'Successfully clicked submit order button: {selector}')
+                                logger.info('Purchase successful! Please complete payment as soon as possible')
                                 return
                         except Exception:
                             continue
                     
                 except Exception as e:
-                    logger.error(f'抢购操作出错: {e}')
+                    logger.error(f'Purchase operation error: {e}')
                     time.sleep(0.1)
             
-            logger.warning('抢购失败，可能商品已售罄或网络延迟')
+            logger.warning('Purchase failed, product may be sold out or network delay')
         except Exception as e:
-            logger.error(f'抢购过程出错: {e}')
+            logger.error(f'Purchase process error: {e}')
     
     def close_browser(self):
-        """关闭浏览器"""
+        """Close browser"""
         if self.browser:
-            logger.info('关闭浏览器...')
+            logger.info('Closing browser...')
             self.browser.close()
-            logger.info('浏览器已关闭')
+            logger.info('Browser closed')
     
     def run(self):
-        """运行整个抢购流程"""
+        """Run the entire flash sale process"""
         try:
-            logger.info('淘宝自动抢购脚本开始运行')
+            logger.info('Taobao Flash Sale Script started')
             
-            # 初始化浏览器
+            # Initialize browser
             self.init_browser()
             
-            # 步骤1：登录
+            # Step 1: Login
             self.login()
             
-            # 步骤2：导航到商品页面
+            # Step 2: Navigate to product page
             self.navigate_to_product()
             
-            # 步骤3：等待抢购时间
+            # Step 3: Wait for flash sale time
             self.check_flash_sale_time()
             
-            # 步骤4：执行抢购
+            # Step 4: Execute purchase
             self.抢购()
             
-            logger.info('淘宝自动抢购脚本运行完成')
+            logger.info('Taobao Flash Sale Script completed')
             
-            # 保持浏览器打开，方便用户查看结果
-            logger.info('脚本运行完成，浏览器将保持打开状态，请手动关闭...')
+            # Keep browser open for user to view results
+            logger.info('Script completed, browser will remain open, please close manually...')
             
         except Exception as e:
-            logger.error(f'脚本运行出错: {e}')
+            logger.error(f'Script runtime error: {e}')
             import traceback
             logger.error(traceback.format_exc())
         finally:
-            # 不自动关闭浏览器，让用户手动处理
+            # Do not automatically close browser, let user handle it
             # self.close_browser()
             pass
 
