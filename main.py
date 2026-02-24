@@ -64,7 +64,7 @@ class TaobaoFlashSale:
                     '--no-sandbox',
                     '--disable-dev-shm-usage'
                 ],
-                executable_path="C:\\Users\\Jared\\AppData\\Local\\ms-playwright\\chromium-1208\\chrome-win64\\chrome.exe"
+                executable_path=r"C:\Users\Jared\AppData\Local\ms-playwright\chromium-1208\chrome-win64\chrome.exe"
             )
         elif self.browser_type == 'firefox':
             self.browser = playwright.firefox.launch(
